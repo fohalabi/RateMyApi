@@ -1,0 +1,44 @@
+// Replace content of the new prisma/schema.prisma with this:
+
+// Define your database connection
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Define the Prisma client generator
+generator client {
+  provider = "prisma-client-js"
+}
+
+// --- Your API Models ---
+model Api {
+  id              String         @id @default(cuid())
+  name            String
+  url             String         @unique
+  description     String?
+  dateSubmitted   DateTime       @default(now())
+
+  reviews         Review[]
+  performanceTests PerformanceTest[]
+}
+
+model Review {
+  id              String         @id @default(cuid())
+  apiId           String
+  rating          Int
+  textContent     String
+  dateCreated     DateTime       @default(now())
+  api             Api            @relation(fields: [apiId], references: [id])
+}
+
+model PerformanceTest {
+  id              String         @id @default(cuid())
+  apiId           String
+  timestamp       DateTime       @default(now())
+  
+  latencyMs       Int
+  statusCode      Int
+
+  api             Api            @relation(fields: [apiId], references: [id])
+}
