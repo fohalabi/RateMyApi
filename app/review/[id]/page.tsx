@@ -1,11 +1,12 @@
-// app/review/[id]/page.tsx
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
-export default function ReviewPage({ params }: { params: { id: string } }) {
-  const apiId = params.id;
+export default function ReviewPage({ params }: { params: Promise<{ id: string }> }) {
+  // Unwrap params using React.use()
+  const { id: apiId } = use(params);
   const router = useRouter();
   
   const [apiName, setApiName] = useState('Loading...');
@@ -48,7 +49,6 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
 
       if (response.ok) {
         setMessage({ text: `Thank you! Your review for ${apiName} was submitted. Redirecting...`, type: 'success' });
-        // Redirect back to the API detail page after a short delay
         setTimeout(() => {
           router.push(`/api/${apiId}`);
         }, 2000);
@@ -64,59 +64,110 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
   };
 
   return (
-    <div className="max-w-xl mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-2">Submit a Review</h1>
-      <h2 className="text-xl text-indigo-600 mb-6">for: {apiName}</h2>
-
-      {/* Status Message Display */}
-      {message && (
-        <div 
-          className={`p-3 mb-4 rounded ${
-            message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-          }`}
-        >
-          {message.text}
+    <div className="container mx-auto py-10 px-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <Link href={`/api/${apiId}`} className="text-teal-400 hover:text-teal-300 text-sm mb-2 inline-block">
+            ← Back to API Details
+          </Link>
+          <h1 className="text-4xl font-bold text-white mb-2">Submit a Review</h1>
+          <p className="text-gray-400">for: <span className="text-teal-400 font-semibold">{apiName}</span></p>
         </div>
-      )}
+        
+        {/* Status Message Display */}
+        {message && (
+          <div 
+            className={`p-4 mb-6 rounded-lg border ${
+              message.type === 'success' 
+                ? 'bg-green-900/30 border-green-500 text-green-300' 
+                : 'bg-red-900/30 border-red-500 text-red-300'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {message.type === 'success' ? (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              )}
+              {message.text}
+            </div>
+          </div>
+        )}
 
-      {/* Review Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="rating" className="block text-sm font-medium text-gray-700">Rating (1-5 Stars)</label>
-          <input
-            id="rating"
-            type="number"
-            min="1"
-            max="5"
-            value={rating}
-            onChange={(e) => setRating(parseInt(e.target.value) || 1)}
-            required
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-          />
+        {/* Review Form */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 shadow-xl">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Star Rating */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-3">
+                Rating *
+              </label>
+              <div className="flex items-center gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className="transition-transform hover:scale-110"
+                  >
+                    <svg 
+                      className={`w-10 h-10 ${star <= rating ? 'text-yellow-400' : 'text-gray-600'}`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  </button>
+                ))}
+                <span className="ml-2 text-xl font-bold text-white">{rating}/5</span>
+              </div>
+            </div>
+
+            {/* Review Text */}
+            <div>
+              <label htmlFor="textContent" className="block text-sm font-semibold text-gray-300 mb-2">
+                Review Text <span className="text-gray-500 font-normal">(Optional)</span>
+              </label>
+              <textarea
+                id="textContent"
+                value={textContent}
+                onChange={(e) => setTextContent(e.target.value)}
+                rows={6}
+                placeholder="Share your experience with this API... What did you like? Any issues? Performance notes?"
+                className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition resize-none"
+              />
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`w-full py-4 px-6 rounded-lg font-semibold text-white transition-all ${
+                isLoading 
+                  ? 'bg-gray-600 cursor-not-allowed' 
+                  : 'bg-teal-500 hover:bg-teal-600 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+              }`}
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Submitting...
+                </span>
+              ) : (
+                'Submit Review'
+              )}
+            </button>
+          </form>
         </div>
-
-        <div>
-          <label htmlFor="textContent" className="block text-sm font-medium text-gray-700">Review Text (Optional)</label>
-          <textarea
-            id="textContent"
-            value={textContent}
-            onChange={(e) => setTextContent(e.target.value)}
-            rows={4}
-            placeholder="Share your experience..."
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-            isLoading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
-          } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
-        >
-          {isLoading ? 'Submitting...' : 'Submit Review'}
-        </button>
-      </form>
+      </div>
     </div>
   );
 }

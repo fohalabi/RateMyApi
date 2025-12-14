@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 import { ApiDetails, Review, PerformanceTestHistory } from '@/types/api';
 import Link from 'next/link';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { PerformanceChart } from './PerformanceCharts';
 
 // Helper component for star rating
 const RatingDisplay = ({ rating }: { rating: number }) => {
@@ -14,49 +16,6 @@ const RatingDisplay = ({ rating }: { rating: number }) => {
         </span>
     );
 };
-
-// Performance Chart - Dark themed
-const PerformanceChartMock = ({ history }: { history: PerformanceTestHistory[] }) => (
-    <div className="bg-gray-800 border border-gray-700 p-6 rounded-lg">
-        <h3 className="text-xl font-semibold mb-4 text-white">Latency (ms) - Last 24h</h3>
-        {history.length === 0 ? (
-            <div className="h-64 flex items-center justify-center">
-                <p className="text-gray-500">No performance tests recorded yet.</p>
-            </div>
-        ) : (
-            <div className="space-y-3">
-                {/* Chart placeholder - In production, use a charting library like recharts */}
-                <div className="h-64 bg-gray-900 rounded-lg p-4 flex items-end justify-between gap-2">
-                    {history.slice(-20).map((test, index) => {
-                        const maxLatency = Math.max(...history.map(t => t.latencyMs));
-                        const height = (test.latencyMs / maxLatency) * 100;
-                        return (
-                            <div 
-                                key={index} 
-                                className="flex-1 bg-teal-500 rounded-t transition-all hover:bg-teal-400"
-                                style={{ height: `${height}%`, minHeight: '8px' }}
-                                title={`${test.latencyMs.toFixed(0)}ms - ${new Date(test.timestamp).toLocaleTimeString()}`}
-                            />
-                        );
-                    })}
-                </div>
-                
-                {/* Recent tests list */}
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {history.slice(-5).reverse().map((test, index) => (
-                        <div key={index} className="flex justify-between items-center text-sm border-b border-gray-700 pb-2">
-                            <span className="text-gray-400">{new Date(test.timestamp).toLocaleString()}</span>
-                            <span className={`font-mono font-medium ${test.statusCode >= 400 ? 'text-red-400' : 'text-green-400'}`}>
-                                {test.latencyMs.toFixed(0)} ms ({test.statusCode})
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )}
-    </div>
-);
-
 
 async function getApiDetails(id: string): Promise<ApiDetails | null> {
     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/stats/${id}`, {
@@ -75,8 +34,9 @@ async function getApiDetails(id: string): Promise<ApiDetails | null> {
 }
 
 
-export default async function ApiDetailPage({ params }: { params: { id: string } }) {
-    const apiDetails = await getApiDetails(params.id);
+export default async function ApiDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const apiDetails = await getApiDetails(id);
 
     if (!apiDetails) {
         notFound();
@@ -122,7 +82,7 @@ export default async function ApiDetailPage({ params }: { params: { id: string }
                     </div>
 
                     {/* Performance Chart */}
-                    <PerformanceChartMock history={apiDetails.performanceHistory} />
+                    <PerformanceChart history={apiDetails.performanceHistory} />
                 </div>
                 
                 {/* Right Column - Reviews */}
