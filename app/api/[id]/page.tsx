@@ -1,39 +1,57 @@
-// app/api/[id]/page.tsx
-
 import { notFound } from 'next/navigation';
 import { ApiDetails, Review, PerformanceTestHistory } from '@/types/api';
 import Link from 'next/link';
 
-// Helper component for star rating (Re-use from homepage)
+// Helper component for star rating
 const RatingDisplay = ({ rating }: { rating: number }) => {
     const fullStars = Math.floor(rating);
     const emptyStars = 5 - fullStars;
 
     return (
-        <span className="text-yellow-500">
+        <span className="text-yellow-400">
             {'★'.repeat(fullStars)}
-            <span className="text-gray-300">{'★'.repeat(emptyStars)}</span>
+            <span className="text-gray-600">{'★'.repeat(emptyStars)}</span>
         </span>
     );
 };
 
-// Simple utility to display performance history data as text (for MVP)
-// This is where a charting library would be integrated in production.
+// Performance Chart - Dark themed
 const PerformanceChartMock = ({ history }: { history: PerformanceTestHistory[] }) => (
-    <div className="border p-4 rounded-lg bg-white shadow-sm">
-        <h3 className="text-xl font-semibold mb-3">Performance History (Latency)</h3>
+    <div className="bg-gray-800 border border-gray-700 p-6 rounded-lg">
+        <h3 className="text-xl font-semibold mb-4 text-white">Latency (ms) - Last 24h</h3>
         {history.length === 0 ? (
-            <p className="text-gray-500">No performance tests recorded yet.</p>
+            <div className="h-64 flex items-center justify-center">
+                <p className="text-gray-500">No performance tests recorded yet.</p>
+            </div>
         ) : (
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-                {history.slice(-10).reverse().map((test, index) => ( // Show last 10 tests
-                    <div key={index} className="flex justify-between items-center text-sm border-b pb-1">
-                        <span className="text-gray-600">{new Date(test.timestamp).toLocaleString()}</span>
-                        <span className={`font-mono font-medium ${test.statusCode >= 400 ? 'text-red-600' : 'text-green-600'}`}>
-                            {test.latencyMs.toFixed(0)} ms ({test.statusCode})
-                        </span>
-                    </div>
-                ))}
+            <div className="space-y-3">
+                {/* Chart placeholder - In production, use a charting library like recharts */}
+                <div className="h-64 bg-gray-900 rounded-lg p-4 flex items-end justify-between gap-2">
+                    {history.slice(-20).map((test, index) => {
+                        const maxLatency = Math.max(...history.map(t => t.latencyMs));
+                        const height = (test.latencyMs / maxLatency) * 100;
+                        return (
+                            <div 
+                                key={index} 
+                                className="flex-1 bg-teal-500 rounded-t transition-all hover:bg-teal-400"
+                                style={{ height: `${height}%`, minHeight: '8px' }}
+                                title={`${test.latencyMs.toFixed(0)}ms - ${new Date(test.timestamp).toLocaleTimeString()}`}
+                            />
+                        );
+                    })}
+                </div>
+                
+                {/* Recent tests list */}
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {history.slice(-5).reverse().map((test, index) => (
+                        <div key={index} className="flex justify-between items-center text-sm border-b border-gray-700 pb-2">
+                            <span className="text-gray-400">{new Date(test.timestamp).toLocaleString()}</span>
+                            <span className={`font-mono font-medium ${test.statusCode >= 400 ? 'text-red-400' : 'text-green-400'}`}>
+                                {test.latencyMs.toFixed(0)} ms ({test.statusCode})
+                            </span>
+                        </div>
+                    ))}
+                </div>
             </div>
         )}
     </div>
@@ -64,76 +82,79 @@ export default async function ApiDetailPage({ params }: { params: { id: string }
         notFound();
     }
     
-    // Calculate overall health score (simple average of latency status)
+    // Calculate overall health score
     const healthyTests = apiDetails.performanceHistory.filter(t => t.statusCode >= 200 && t.statusCode < 400).length;
     const totalTests = apiDetails.performanceHistory.length;
     const healthPercentage = totalTests > 0 ? (healthyTests / totalTests) * 100 : 0;
 
     return (
         <div className="container mx-auto py-10 px-4">
-            <h1 className="text-4xl font-bold mb-2">{apiDetails.name}</h1>
-            <p className="text-gray-600 text-lg mb-4 truncate">{apiDetails.url}</p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {/* 1. Overall Stats Card */}
-                <div className="bg-white p-6 rounded-lg shadow-lg col-span-1">
-                    <h2 className="text-2xl font-semibold mb-4">Overall Score</h2>
-                    <div className="flex items-center space-x-3">
-                        <div className="text-5xl font-extrabold text-yellow-600">{apiDetails.avgRating.toFixed(1)}</div>
-                        <div>
-                            <RatingDisplay rating={apiDetails.avgRating} />
-                            <p className="text-sm text-gray-500">{apiDetails.totalReviews} total reviews</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 2. Uptime/Health Card */}
-                <div className="bg-white p-6 rounded-lg shadow-lg col-span-1">
-                    <h2 className="text-2xl font-semibold mb-4">Health/Uptime</h2>
-                    <p className="text-4xl font-extrabold text-indigo-600">{healthPercentage.toFixed(1)}%</p>
-                    <p className="text-sm text-gray-500">Successful tests out of {totalTests}</p>
-                </div>
-
-                {/* 3. Description */}
-                <div className="bg-white p-6 rounded-lg shadow-lg col-span-1">
-                    <h2 className="text-2xl font-semibold mb-4">Description</h2>
-                    <p className="text-gray-700 text-sm">
-                        {apiDetails.description || "No description provided."}
-                    </p>
-                </div>
+            {/* Header Section */}
+            <div className="mb-8">
+                <h1 className="text-4xl font-bold mb-2 text-white">{apiDetails.name}</h1>
+                <p className="text-teal-400 text-lg mb-1">{apiDetails.url}</p>
+                <p className="text-gray-400 text-sm">
+                    {apiDetails.description || "No description provided."}
+                </p>
             </div>
 
-            {/* Performance Chart & Review Section */}
+            {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
+                {/* Left Column - Chart and Stats */}
+                <div className="lg:col-span-2 space-y-6">
+                    {/* Rating Card */}
+                    <div className="bg-gray-800 border border-gray-700 p-6 rounded-lg">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-teal-500 rounded-full p-3">
+                                <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div className="text-3xl font-bold text-white mb-1">
+                                    {apiDetails.avgRating.toFixed(1)}/5 
+                                    <span className="text-yellow-400 ml-2">★</span>
+                                </div>
+                                <RatingDisplay rating={apiDetails.avgRating} />
+                                <p className="text-sm text-gray-400 mt-1">{apiDetails.totalReviews} reviews</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Performance Chart */}
                     <PerformanceChartMock history={apiDetails.performanceHistory} />
                 </div>
                 
+                {/* Right Column - Reviews */}
                 <div className="lg:col-span-1">
-                    <Link 
-                        href={`/review/${apiDetails.id}`} 
-                        className="w-full inline-block text-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-500 hover:bg-green-600 mb-6"
-                    >
-                        Submit A Review
-                    </Link>
-                    
-                    <h2 className="text-2xl font-semibold mb-4 border-t pt-4">User Reviews ({apiDetails.totalReviews})</h2>
-                    <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
-                        {apiDetails.reviews.length === 0 ? (
-                            <p className="text-gray-500">Be the first to leave a review!</p>
-                        ) : (
-                            apiDetails.reviews.map((review, index) => (
-                                <div key={index} className="p-4 border rounded-md bg-gray-50">
-                                    <div className="mb-1">
-                                        <RatingDisplay rating={review.rating} />
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                        <h2 className="text-2xl font-semibold mb-4 text-white">REVIEWS</h2>
+                        
+                        <div className="space-y-4 max-h-[400px] overflow-y-auto mb-6">
+                            {apiDetails.reviews.length === 0 ? (
+                                <p className="text-gray-500 text-center py-8">Be the first to leave a review!</p>
+                            ) : (
+                                apiDetails.reviews.map((review, index) => (
+                                    <div key={index} className="p-4 bg-gray-750 rounded-lg border border-gray-700">
+                                        <div className="mb-2">
+                                            <RatingDisplay rating={review.rating} />
+                                        </div>
+                                        <p className="text-sm text-gray-300 mb-2">{review.textContent}</p>
+                                        <p className="text-xs text-gray-500">
+                                            {new Date(review.dateCreated).toLocaleDateString()}
+                                        </p>
                                     </div>
-                                    <p className="text-sm text-gray-800 italic mb-2">{review.textContent}</p>
-                                    <p className="text-xs text-gray-400">
-                                        {new Date(review.dateCreated).toLocaleDateString()}
-                                    </p>
-                                </div>
-                            ))
-                        )}
+                                ))
+                            )}
+                        </div>
+                        
+                        {/* Write a Review Button */}
+                        <Link 
+                            href={`/review/${apiDetails.id}`} 
+                            className="w-full block text-center py-3 px-4 rounded-lg text-white font-semibold bg-teal-500 hover:bg-teal-600 transition-all shadow-lg"
+                        >
+                            Write a Review
+                        </Link>
                     </div>
                 </div>
             </div>
