@@ -3,7 +3,7 @@ import { ApiListing } from '@/types/api';
 
 // This is a Server Component, fetching data directly on the server
 async function getApis(): Promise<ApiListing[]> {
-  const response = await fetch("/api/list", {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/list`, {
     cache: 'no-store',
   });
 
