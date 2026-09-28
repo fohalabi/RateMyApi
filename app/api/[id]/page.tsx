@@ -1,117 +1,113 @@
-import { notFound } from 'next/navigation';
-import { ApiDetails } from '@/types/api';
 import Link from 'next/link';
-import { PerformanceChart } from './PerformanceCharts';
+import { notFound } from 'next/navigation';
+import { ArrowLeft, ExternalLink, Star } from 'lucide-react';
+import { getApiDetails } from '@/lib/api-details';
+import { PerformanceDashboard } from './PerformanceCharts';
 
-// Helper component for star rating
-const RatingDisplay = ({ rating }: { rating: number }) => {
-    const fullStars = Math.floor(rating);
-    const emptyStars = 5 - fullStars;
+function RatingDisplay({ rating }: { rating: number }) {
+  const fullStars = Math.floor(rating);
 
-    return (
-        <span className="text-yellow-400">
-            {'★'.repeat(fullStars)}
-            <span className="text-gray-600">{'★'.repeat(emptyStars)}</span>
-        </span>
-    );
-};
-
-async function getApiDetails(id: string): Promise<ApiDetails | null> {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/stats/${id}`, {
-        cache: 'no-store',
-    });
-
-    if (response.status === 404) {
-        return null;
-    }
-
-    if (!response.ok) {
-        throw new Error('Failed to fetch API details');
-    }
-
-    return response.json();
+  return (
+    <span className="text-yellow-400" aria-label={`${rating} out of 5 stars`}>
+      {'★'.repeat(fullStars)}
+      <span className="text-gray-600">{'★'.repeat(5 - fullStars)}</span>
+    </span>
+  );
 }
 
-
 export default async function ApiDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
-    const apiDetails = await getApiDetails(id);
+  const { id } = await params;
+  const apiDetails = await getApiDetails(id, '24h');
 
-    if (!apiDetails) {
-        notFound();
-    }
-    
-    return (
-        <div className="container mx-auto py-10 px-4">
-            {/* Header Section */}
-            <div className="mb-8">
-                <h1 className="text-4xl font-bold mb-2 text-white">{apiDetails.name}</h1>
-                <p className="text-teal-400 text-lg mb-1">{apiDetails.url}</p>
-                <p className="text-gray-400 text-sm">
-                    {apiDetails.description || "No description provided."}
-                </p>
-            </div>
+  if (!apiDetails) notFound();
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column - Chart and Stats */}
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Rating Card */}
-                    <div className="bg-gray-800 border border-gray-700 p-6 rounded-lg">
-                        <div className="flex items-center gap-4">
-                            <div className="bg-teal-500 rounded-full p-3">
-                                <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <div className="text-3xl font-bold text-white mb-1">
-                                    {apiDetails.avgRating.toFixed(1)}/5 
-                                    <span className="text-yellow-400 ml-2">★</span>
-                                </div>
-                                <RatingDisplay rating={apiDetails.avgRating} />
-                                <p className="text-sm text-gray-400 mt-1">{apiDetails.totalReviews} reviews</p>
-                            </div>
-                        </div>
-                    </div>
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <Link href="/" className="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 transition hover:text-white">
+        <ArrowLeft className="h-4 w-4" />
+        All APIs
+      </Link>
 
-                    {/* Performance Chart */}
-                    <PerformanceChart history={apiDetails.performanceHistory} />
-                </div>
-                
-                {/* Right Column - Reviews */}
-                <div className="lg:col-span-1">
-                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                        <h2 className="text-2xl font-semibold mb-4 text-white">REVIEWS</h2>
-                        
-                        <div className="space-y-4 max-h-[400px] overflow-y-auto mb-6">
-                            {apiDetails.reviews.length === 0 ? (
-                                <p className="text-gray-500 text-center py-8">Be the first to leave a review!</p>
-                            ) : (
-                                apiDetails.reviews.map((review, index) => (
-                                    <div key={index} className="p-4 bg-gray-750 rounded-lg border border-gray-700">
-                                        <div className="mb-2">
-                                            <RatingDisplay rating={review.rating} />
-                                        </div>
-                                        <p className="text-sm text-gray-300 mb-2">{review.textContent}</p>
-                                        <p className="text-xs text-gray-500">
-                                            {new Date(review.dateCreated).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                        
-                        {/* Write a Review Button */}
-                        <Link 
-                            href={`/review/${apiDetails.id}`} 
-                            className="w-full block text-center py-3 px-4 rounded-lg text-white font-semibold bg-teal-500 hover:bg-teal-600 transition-all shadow-lg"
-                        >
-                            Write a Review
-                        </Link>
-                    </div>
-                </div>
-            </div>
+      <header className="mb-8 flex flex-col gap-5 border-b border-gray-800 pb-8 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">{apiDetails.name}</h1>
+            {apiDetails.metrics.latestStatusCode !== null && (
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                apiDetails.metrics.latestStatusCode >= 200 && apiDetails.metrics.latestStatusCode < 400
+                  ? 'bg-emerald-400/10 text-emerald-300 ring-1 ring-emerald-400/20'
+                  : 'bg-rose-400/10 text-rose-300 ring-1 ring-rose-400/20'
+              }`}>
+                {apiDetails.metrics.latestStatusCode >= 200 && apiDetails.metrics.latestStatusCode < 400
+                  ? 'Operational'
+                  : 'Unavailable'}
+              </span>
+            )}
+          </div>
+          <p className="max-w-3xl text-gray-400">{apiDetails.description || 'No description provided.'}</p>
+          <a
+            href={apiDetails.url}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex max-w-full items-center gap-2 break-all text-sm text-teal-400 hover:text-teal-300"
+          >
+            {apiDetails.url}
+            <ExternalLink className="h-4 w-4 shrink-0" />
+          </a>
         </div>
-    );
+
+        <div className="flex shrink-0 items-center gap-3 rounded-xl border border-gray-700 bg-gray-800 px-5 py-4">
+          <span className="rounded-lg bg-yellow-400/10 p-2"><Star className="h-5 w-5 fill-yellow-400 text-yellow-400" /></span>
+          <div>
+            <p className="text-xl font-bold text-white">{apiDetails.avgRating.toFixed(1)}</p>
+            <p className="text-xs text-gray-500">{apiDetails.totalReviews} reviews</p>
+          </div>
+        </div>
+      </header>
+
+      <PerformanceDashboard
+        apiId={apiDetails.id}
+        initialHistory={apiDetails.performanceHistory}
+        initialMetrics={apiDetails.metrics}
+        initialRange={apiDetails.selectedRange}
+      />
+
+      <section className="mt-8 rounded-xl border border-gray-700 bg-gray-800 p-5 sm:p-6" aria-labelledby="reviews-heading">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <div>
+            <h2 id="reviews-heading" className="text-xl font-semibold text-white">Developer reviews</h2>
+            <p className="mt-1 text-sm text-gray-400">Feedback from developers who have used this API.</p>
+          </div>
+          <Link
+            href={`/review/${apiDetails.id}`}
+            className="shrink-0 rounded-lg bg-teal-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600"
+          >
+            Write a review
+          </Link>
+        </div>
+
+        {apiDetails.reviews.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-gray-700 py-10 text-center text-gray-500">
+            Be the first to share your experience.
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {apiDetails.reviews.map((review) => (
+              <article key={review.id} className="rounded-lg border border-gray-700 bg-gray-900/50 p-5">
+                <RatingDisplay rating={review.rating} />
+                <p className="mt-3 text-sm leading-6 text-gray-300">
+                  {review.textContent || 'Rating submitted without a written review.'}
+                </p>
+                <time className="mt-4 block text-xs text-gray-500" dateTime={review.dateCreated}>
+                  {new Date(review.dateCreated).toLocaleDateString(undefined, {
+                    year: 'numeric', month: 'short', day: 'numeric',
+                  })}
+                </time>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
 }

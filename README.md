@@ -5,7 +5,8 @@ RateMyAPI is a community API discovery and reliability platform. Developers can 
 ## Current capabilities
 
 - API directory with ratings and latest latency
-- Individual API performance history and reviews
+- Responsive 24-hour, 7-day, and 30-day performance history
+- Uptime, median latency, p95 latency, and current-status metrics
 - Scheduled endpoint health checks through Vercel Cron
 - Server-side endpoint validation and SSRF protection
 - PostgreSQL persistence through Prisma
@@ -25,6 +26,8 @@ Requirements: Node.js 20+, npm, and PostgreSQL.
 3. Generate the database client with `npx prisma generate`.
 4. Apply the schema with `npx prisma db push`.
 5. Start the app with `npm run dev`.
+
+The production cron is configured to probe endpoints every 15 minutes. Ensure your Vercel plan supports that schedule, or adjust `vercel.json` to match your deployment provider's limits.
 
 ## Quality checks
 

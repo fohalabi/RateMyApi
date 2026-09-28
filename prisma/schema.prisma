@@ -13,32 +13,36 @@ generator client {
 
 // --- Your API Models ---
 model Api {
-  id              String         @id @default(cuid())
-  name            String
-  url             String         @unique
-  description     String?
-  dateSubmitted   DateTime       @default(now())
+  id            String   @id @default(cuid())
+  name          String
+  url           String   @unique
+  description   String?
+  dateSubmitted DateTime @default(now())
 
-  reviews         Review[]
+  reviews          Review[]
   performanceTests PerformanceTest[]
 }
 
 model Review {
-  id              String         @id @default(cuid())
-  apiId           String
-  rating          Int
-  textContent     String
-  dateCreated     DateTime       @default(now())
-  api             Api            @relation(fields: [apiId], references: [id])
+  id          String   @id @default(cuid())
+  apiId       String
+  rating      Int
+  textContent String
+  dateCreated DateTime @default(now())
+  api         Api      @relation(fields: [apiId], references: [id])
+
+  @@index([apiId, dateCreated])
 }
 
 model PerformanceTest {
-  id              String         @id @default(cuid())
-  apiId           String
-  timestamp       DateTime       @default(now())
-  
-  latencyMs       Int
-  statusCode      Int
+  id        String   @id @default(cuid())
+  apiId     String
+  timestamp DateTime @default(now())
 
-  api             Api            @relation(fields: [apiId], references: [id])
+  latencyMs  Int
+  statusCode Int
+
+  api Api @relation(fields: [apiId], references: [id])
+
+  @@index([apiId, timestamp])
 }
