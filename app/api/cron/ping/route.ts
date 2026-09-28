@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import axios from 'axios';
+import { probeEndpoint } from '@/lib/probe-endpoint';
+
+const CONCURRENCY = 5;
 
 export async function GET(request: Request) {
   // Verify cron secret for security
@@ -9,32 +11,31 @@ export async function GET(request: Request) {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  // Run pinger logic here
   const apis = await prisma.api.findMany();
-  
-  for (const api of apis) {
-    try {
-      const startTime = Date.now();
-      const response = await axios.get(api.url, { timeout: 10000, validateStatus: () => true });
-      const latencyMs = Date.now() - startTime;
-      
-      await prisma.performanceTest.create({
-        data: {
-          apiId: api.id,
-          latencyMs,
-          statusCode: response.status,
-        },
-      });
-    } catch (error) {
-      await prisma.performanceTest.create({
-        data: {
-          apiId: api.id,
-          latencyMs: 99999,
-          statusCode: 0,
-        },
-      });
+  let checked = 0;
+  let failed = 0;
+
+  async function worker() {
+    while (true) {
+      const api = apis.shift();
+      if (!api) return;
+
+      try {
+        const result = await probeEndpoint(api.url);
+        await prisma.performanceTest.create({ data: { apiId: api.id, ...result } });
+        checked += 1;
+      } catch (error) {
+        console.error(`Probe failed for API ${api.id}:`, error instanceof Error ? error.message : error);
+        await prisma.performanceTest.create({
+          data: { apiId: api.id, latencyMs: 10_000, statusCode: 0 },
+        });
+        checked += 1;
+        failed += 1;
+      }
     }
   }
 
-  return NextResponse.json({ success: true });
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, apis.length) }, () => worker()));
+
+  return NextResponse.json({ success: true, checked, failed });
 }

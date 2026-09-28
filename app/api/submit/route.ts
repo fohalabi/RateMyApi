@@ -1,35 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma'; 
-
-// Simple function to check if a string looks like a valid URL
-const isValidUrl = (url: string) => {
-  try {
-    new URL(url);
-    return true;
-  } catch (e) {
-    return false;
-  }
-};
+import { assertPublicEndpoint, normalizeEndpointUrl, UnsafeEndpointError } from '@/lib/endpoint-security';
 
 export async function POST(req: NextRequest) {
   try {
     const { name, url, description } = await req.json();
 
     // 1. Basic Validation (Crucial for the portfolio)
-    if (!name || !url) {
+    if (typeof name !== 'string' || !name.trim() || !url) {
       return NextResponse.json({ message: 'Missing name or URL' }, { status: 400 });
     }
-    
-    if (!isValidUrl(url)) {
-      return NextResponse.json({ message: 'Invalid URL format' }, { status: 400 });
+
+    if (name.trim().length > 100 || (typeof description === 'string' && description.length > 1_000)) {
+      return NextResponse.json({ message: 'Name or description is too long.' }, { status: 400 });
     }
+
+    const endpointUrl = normalizeEndpointUrl(url);
+    await assertPublicEndpoint(endpointUrl);
 
     // 2. Database Insertion
     const newApi = await prisma.api.create({
       data: {
-        name,
-        url,
-        description,
+        name: name.trim(),
+        url: endpointUrl.toString(),
+        description: typeof description === 'string' ? description.trim() || null : null,
       },
     });
 
@@ -38,6 +32,10 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('API submission error:', error);
+
+    if (error instanceof UnsafeEndpointError) {
+      return NextResponse.json({ message: error.message }, { status: 400 });
+    }
     
     // Check for specific Prisma errors (e.g., unique constraint violation on 'url')
     if (error instanceof Error && 'code' in error && error.code === 'P2002') {

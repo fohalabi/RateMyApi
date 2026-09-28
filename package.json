@@ -7,12 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test lib/endpoint-security.test.ts",
     "pinger": "npx ts-node --require ts-node/register scripts/pinger.ts",
     "pinger:watch": "nodemon --exec \"npm run pinger\""
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
-    "axios": "^1.13.2",
     "dotenv": "^17.2.3",
     "lucide-react": "^0.561.0",
     "next": "16.0.9",

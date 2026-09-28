@@ -68,7 +68,7 @@ export default async function HomePage() {
             <p className="text-lg text-gray-300 mb-8 leading-relaxed">
               Be the first to submit an API and help developers discover 
               and rate the best APIs out there. Share your work or review 
-              APIs you've used!
+              APIs you&apos;ve used!
             </p>
             
             <Link 

@@ -26,7 +26,7 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
         } else {
           setApiName('API Not Found');
         }
-      } catch (e) {
+      } catch {
         setApiName('Error loading API name');
       }
     }
@@ -56,7 +56,7 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
         setMessage({ text: data.message || 'Review submission failed.', type: 'error' });
       }
 
-    } catch (error) {
+    } catch {
       setMessage({ text: 'A network error occurred. Please try again.', type: 'error' });
     } finally {
       setIsLoading(false);

@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import axios from 'axios';
 import prisma from '../lib/prisma';
+import { probeEndpoint } from '../lib/probe-endpoint';
 
 // --- 1. The Pinging Function ---
 async function performPing(apiId: string, url: string) {
@@ -10,19 +10,12 @@ async function performPing(apiId: string, url: string) {
   console.log(`Pinging: ${url}`);
   
   try {
-    const startTime = Date.now();
-    
-    // Send a simple HEAD request for speed, or GET if HEAD is insufficient
-    const response = await axios.get(url, {
-      timeout: 10000, 
-      validateStatus: () => true, 
-    });
-
-    latencyMs = Date.now() - startTime;
-    statusCode = response.status;
+    const result = await probeEndpoint(url);
+    latencyMs = result.latencyMs;
+    statusCode = result.statusCode;
   } catch (error) {
     // If request fails completely (e.g., DNS error, network timeout)
-    latencyMs = 99999; // Assign a very high latency
+    latencyMs = 10000;
     statusCode = 0; // Use 0 to denote a network/timeout failure
     console.error(`Error pinging ${url}:`, error instanceof Error ? error.message : String(error));
   }

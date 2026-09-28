@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
-import { ApiDetails, Review, PerformanceTestHistory } from '@/types/api';
+import { ApiDetails } from '@/types/api';
 import Link from 'next/link';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { PerformanceChart } from './PerformanceCharts';
 
 // Helper component for star rating
@@ -42,11 +41,6 @@ export default async function ApiDetailPage({ params }: { params: Promise<{ id: 
         notFound();
     }
     
-    // Calculate overall health score
-    const healthyTests = apiDetails.performanceHistory.filter(t => t.statusCode >= 200 && t.statusCode < 400).length;
-    const totalTests = apiDetails.performanceHistory.length;
-    const healthPercentage = totalTests > 0 ? (healthyTests / totalTests) * 100 : 0;
-
     return (
         <div className="container mx-auto py-10 px-4">
             {/* Header Section */}
